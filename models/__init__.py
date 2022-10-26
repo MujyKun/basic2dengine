@@ -1,5 +1,9 @@
-from .Image import Image
-from .Movement import Movement, MovementManipulator, Angle
+from .Action import Action
+from .Color import Color
 from .Size import Size
-from .BaseSprite import BaseSprite
+from .Movement import Movement, MovementManipulator, Angle
+from .Image import Image
+from .Visibility import Visibility
 from .Sprite import Sprite
+from .Sprite import Sprite
+from .Scene import Scene

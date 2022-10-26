@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import math
-from typing import Optional
+from typing import Optional, Union
 
 
 @dataclass
@@ -8,13 +8,13 @@ class MovementManipulator:
     """
     Holds a change/modification or position to an axis or direction.
 
-    :param x: int
+    :param x: Union[int, float]
         Change/Modifier or position in X direction.
-    :param y: int
+    :param y: Union[int, float]
         Change/Modifier or position in X direction.
     """
-    x: int
-    y: int
+    x: Union[int, float]
+    y: Union[int, float]
 
 
 class Angle:
@@ -39,6 +39,11 @@ class Angle:
         """Get the angle in radians."""
         return self._angle
 
+    @property
+    def angle_in_degrees(self):
+        """Get the angle in degrees."""
+        return self.radians_to_degrees(self._angle)
+
     @angle.setter
     def angle(self, radians: float):
         """Set the angle in radians.
@@ -47,6 +52,16 @@ class Angle:
             The angle to set.
         """
         self._angle = radians
+
+    @property
+    def cos(self):
+        """Get the cos of the angle."""
+        return math.cos(self.angle)
+
+    @property
+    def sin(self):
+        """Get the sin of the angle."""
+        return math.sin(self.angle)
 
     @staticmethod
     def radians_to_degrees(radians: float):
@@ -93,6 +108,40 @@ class Movement:
         self.img_angle = img_angle or Angle()
         self.move_angle = move_angle or Angle()
 
+    def set_position(self, center_x, center_y):
+        """Set the object's position."""
+        self.position.x, self.position.y = center_x, center_y
+
+    def update_position(self):
+        """Update the position of the object."""
+        self.position.x += self.velocity.x
+        self.position.y += self.velocity.y
+
+    def add_vector(self, angle: Angle, thrust=1):
+        """Modify the motion."""
+        self.velocity.x += thrust * angle.cos
+        self.velocity.y += thrust * angle.sin
+
+    def update(self):
+        """Update the movement."""
+        self.update_speed()
+        self.update_angle()
+        self.update_velocity()
+        self.update_position()
+
+    def update_velocity(self):
+        """Update the velocity of the object."""
+        self.velocity.x = self.speed * self.move_angle.cos
+        self.velocity.y = self.speed * self.move_angle.sin
+
+    def update_speed(self):
+        """Update the speed."""
+        self._speed = math.sqrt(self.velocity.x**2 + self.velocity.y**2)
+
+    def update_angle(self):
+        """Update the angle."""
+        self.move_angle.angle = math.atan2(self.velocity.y, self.velocity.x)
+
     @property
     def speed(self):
         """Get the speed of the object."""
@@ -109,3 +158,4 @@ class Movement:
             The new speed of the object.
         """
         self._speed = abs(new_speed)
+        self.update_velocity()

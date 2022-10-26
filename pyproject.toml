@@ -6,6 +6,7 @@ authors = ["MujyKun <mujy@irenebot.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
+pygame = "^2.1.2"
 
 [tool.poetry.dev-dependencies]
 

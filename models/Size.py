@@ -13,3 +13,6 @@ class Size:
     """
     width: int
     height: int
+
+    def get_tuple(self) -> tuple:
+        return self.width, self.height

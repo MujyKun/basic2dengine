@@ -1,6 +1,6 @@
 class Action:
     """
-    Represents a bounded action when encountering the boundaries of a scene.
+    Represents a bounded action when encountering the boundaries of a scene or sprite.
 
     :param action_type: str
         The action type.
@@ -16,14 +16,26 @@ class Action:
 
     @classmethod
     def die(cls):
-        """Die"""
+        """Die when encountering a scene or sprite."""
         return Action("die")
 
     @classmethod
     def wrap(cls):
+        """Wrap around the scene."""
         return Action("wrap")
 
     @classmethod
     def stop(cls):
+        """Stop when hitting the boundary of a scene or sprite."""
         return Action("stop")
+
+    @classmethod
+    def bounce(cls):
+        """Bounce off when hitting the boundary of a scene or sprite."""
+        return Action("bounce")
+
+    @classmethod
+    def pass_through(cls):
+        """Pass through a sprite."""
+        return Action("pass")
 

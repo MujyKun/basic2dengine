@@ -97,16 +97,20 @@ class Movement:
         The image angle of the object.
     :param move_angle: ref:`Angle`:
         The move angle of the object.
+    :param static: bool
+        Whether the object doesn't move / is not dynamic.
     """
     def __init__(self, speed=0,
                  position: MovementManipulator = None, velocity: MovementManipulator = None,
-                 acceleration: MovementManipulator = None, img_angle: Angle = None, move_angle: Angle = None):
+                 acceleration: MovementManipulator = None, img_angle: Angle = None, move_angle: Angle = None,
+                 static=False):
         self._speed = abs(speed)
         self.position = position or MovementManipulator(0, 0)
         self.velocity = velocity or MovementManipulator(0, 0)
         self.acceleration = acceleration or MovementManipulator(0, 0)
         self.img_angle = img_angle or Angle()
         self.move_angle = move_angle or Angle()
+        self.static = static
 
     def set_position(self, center_x, center_y):
         """Set the object's position."""
@@ -124,10 +128,15 @@ class Movement:
 
     def update(self):
         """Update the movement."""
-        self.update_speed()
-        self.update_angle()
-        self.update_velocity()
-        self.update_position()
+        if not self.static:
+            self.update_speed()
+            self.update_move_angle()
+            self.update_velocity()
+            self.update_position()
+
+    @property
+    def is_moving(self):
+        return not (self.velocity.x == 0 and self.velocity.y == 0)
 
     def update_velocity(self):
         """Update the velocity of the object."""
@@ -138,9 +147,13 @@ class Movement:
         """Update the speed."""
         self._speed = math.sqrt(self.velocity.x**2 + self.velocity.y**2)
 
-    def update_angle(self):
-        """Update the angle."""
+    def update_move_angle(self):
+        """Update the move angle."""
         self.move_angle.angle = math.atan2(self.velocity.y, self.velocity.x)
+
+    def update_img_angle(self, angle: Angle):
+        """Update the image angle."""
+        self.img_angle = angle
 
     @property
     def speed(self):

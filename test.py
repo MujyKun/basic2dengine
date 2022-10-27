@@ -1,7 +1,8 @@
 from models import Sprite, Image, Scene, Movement, MovementManipulator, Angle, Action, Size
 
 
-wallpaper = Sprite(image=Image(Size(1280, 720), image_name="wallpaper", file_location="assets/wallpaper.jpg"),
+wallpaper = Sprite(image=Image(Size(1280, 720), image_name="wallpaper", file_location="assets/wallpaper.jpg",
+                               wallpaper=True),
                    movement=Movement(position=MovementManipulator(1280/2, 720/2), static=True),
                    bounded_action=Action.pass_through(),
                    collision_action=Action.pass_through())
@@ -17,7 +18,8 @@ def test_horizontal_movement():
 
 def test_vertical_movement():
     movement = Movement(position=MovementManipulator(300, 300), static=False)
-    sprite = Sprite(movement=movement, bounded_action=Action.stop())
+    image = Image(Size(100,100), image_name="stand_still")
+    sprite = Sprite(image=image, movement=movement, bounded_action=Action.stop())
     movement_2 = Movement(velocity=MovementManipulator(0, -3), position=MovementManipulator(300, 720))
     sprite_2 = Sprite(movement=movement_2, bounded_action=Action.stop(), collision_action=Action.bounce())
     Scene("Test", sprites=[wallpaper, sprite, sprite_2]).start()

@@ -35,6 +35,9 @@ class Sprite(pygame.sprite.Sprite):
         super(Sprite, self).__init__()
         self.size: Size = size or Size(100, 100)
         self.image_obj: Image = image or Image(self.size)
+        # The sprite size must match the image size.
+        # The image may change the size to fit.
+        self.size = self.image_obj.size
         self.movement: Movement = movement or Movement()
         self.__visibility = Visibility(visibility)
         self._rect = None
@@ -45,6 +48,7 @@ class Sprite(pygame.sprite.Sprite):
         self.stationary_collisions = []
         self._invert_v_x = False
         self._invert_v_y = False
+        self._interacted_with_scene = False  # Know if our display is constantly updating.
 
     @property
     def rect(self):
@@ -54,7 +58,17 @@ class Sprite(pygame.sprite.Sprite):
         """
         if not self._rect:
             self._rect = self.image_obj.surface.get_rect()
-            self.movement.set_position(self._rect.x, self._rect.y)
+
+            if not self.static:
+                pos = self.movement.position.get_tuple()
+                if pos == (0, 0):
+                    pos = (self._rect.x, self._rect.y)
+                self.movement.set_position(*pos)
+            elif self.image_obj.wallpaper:
+                self._rect.x, self._rect.y = (0, 0)
+            else:
+                self._rect.centerx, self._rect.centery = self.movement.position.get_tuple()
+
             self._rect_surface = self.image_obj.surface
 
         if self._rect_surface != self.image_obj.surface:
@@ -107,27 +121,33 @@ class Sprite(pygame.sprite.Sprite):
 
     @property
     def left(self):
-        return self.movement.position.x - (self.size.width / 2)
+        """Get the left of the sprite."""
+        return self.rect.left
 
     @property
     def right(self):
-        return self.movement.position.x + (self.size.width / 2)
+        """Get the right of the sprite."""
+        return self.rect.right
 
     @property
     def top(self):
-        return self.movement.position.y - (self.size.width / 2)
+        """Get the top of the sprite."""
+        return self.rect.top
 
     @property
     def bottom(self):
-        return self.movement.position.y + (self.size.width / 2)
+        """Get the bottom of the sprite."""
+        return self.rect.bottom
 
-    def collides_with(self, sprite):
+    def collides_with(self, sprite, visible=True):
         """Check if a sprite collides with another sprite.
 
         :param sprite: :ref:`Sprite`
             The sprite to check collisions with.
+        :param visible: bool
+            Whether the object needs to be visible or not.
         """
-        if not (self.visible and sprite.visible) or self == sprite:
+        if (visible and not (self.visible and sprite.visible)) or self == sprite:
             return False
 
         # instead of checking to see if the sprites are inside each other (inherently more complex),
@@ -167,7 +187,7 @@ class Sprite(pygame.sprite.Sprite):
         left_check = self.movement.position.x < 0
         right_check = self.movement.position.x > self._scene_size.width
 
-        wrap = self._bounded_action.wrap() == self._bounded_action
+        wrap = Action.wrap() == self._bounded_action
 
         if top_check:
             new_y = self._scene_size.height if wrap else 0
@@ -178,15 +198,21 @@ class Sprite(pygame.sprite.Sprite):
         if right_check:
             new_x = 0 if wrap else self._scene_size.width
 
-        if self._bounded_action.die() == self._bounded_action and \
-                any([top_check, bottom_check, left_check, right_check]):
+        out_of_bounds = any([top_check, bottom_check, left_check, right_check])
+
+        if Action.die() == self._bounded_action and out_of_bounds:
             self.hide()
+        if Action.bounce() == self._bounded_action and out_of_bounds:
+            if bottom_check or top_check:
+                self.movement.velocity.y *= -1
+            if right_check or left_check:
+                self.movement.velocity.x *= -1
 
         self.movement.set_position(new_x, new_y)
 
     def _update_position_and_angle(self):
         """Update the position of the sprite."""
-        if not self.visible:
+        if not self.visible or self.static:
             return
 
         if not self.image_obj.no_rotation_surface:
@@ -208,27 +234,32 @@ class Sprite(pygame.sprite.Sprite):
             self.movement.velocity.x *= -1
             self._invert_v_x = False
 
-        colliding_sprints: List[Sprite] = [sprite for sprite_group in self.groups()
-                                           for sprite in sprite_group.sprites()
-                                           if self != sprite and self.collides_with(sprite)]
-        if not colliding_sprints or self.collision_action.pass_through() == self.collision_action:
+        if not self._interacted_with_scene:
             return
 
-        for sprite in colliding_sprints:
+        colliding_sprites: List[Sprite] = [sprite for sprite_group in self.groups()
+                                           for sprite in sprite_group.sprites()
+                                           if self != sprite and self.collides_with(sprite, visible=True)]
+        if not colliding_sprites or self.collision_action.pass_through() == self.collision_action:
+            return
+
+        for sprite in colliding_sprites:
             self._handle_collision(sprite)
 
     def _handle_collision(self, sprite):
         """Handle the collisions of a sprite."""
         # Check if the objects disappear.
+        both_static = self.static and sprite.static
         if Action.die() == self.collision_action and \
-                Action.pass_through() != sprite.collision_action:
+                Action.pass_through() != sprite.collision_action and not both_static:
             self.hide()
         if Action.die() == sprite.collision_action and \
-                Action.pass_through() != self.collision_action:
+                Action.pass_through() != self.collision_action and not both_static:
             sprite.hide()
 
-        # confirm both objects are still visible.
-        if not (sprite.visible and self.visible):
+        # confirm both objects are still visible unless we need to bounce.
+        if not (sprite.visible and self.visible) and \
+                not (Action.bounce() in [self.collision_action, sprite.collision_action]):
             return
 
         if Action.pass_through() in [self.collision_action, sprite.collision_action]:
@@ -237,6 +268,13 @@ class Sprite(pygame.sprite.Sprite):
         # handle bounce for current sprite.
         if Action.bounce() == self.collision_action:
             self._handle_bounce(self, sprite)
+
+        # This is the only case where we handle the bounce of the other sprite because we do not want to
+        # bounce against this object in the future when it is not visible.
+        # this sprite object will not have to handle the bounce again.
+        if Action.bounce() == sprite.collision_action and not self.visible:
+            sprite.stationary_collisions.append(self)
+            self._handle_bounce(sprite, self)
 
     @staticmethod
     def _handle_bounce(sprite, collided_sprite):
@@ -292,3 +330,6 @@ class Sprite(pygame.sprite.Sprite):
         self._check_bounds()  # check bounds
         self._check_collisions()
         self._update_position_and_angle()  # update pos
+
+        if not self._interacted_with_scene:
+            self._interacted_with_scene = True

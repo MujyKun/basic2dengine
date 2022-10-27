@@ -16,6 +16,9 @@ class MovementManipulator:
     x: Union[int, float]
     y: Union[int, float]
 
+    def get_tuple(self):
+        return self.x, self.y
+
 
 class Angle:
     """
@@ -114,7 +117,8 @@ class Movement:
 
     def set_position(self, center_x, center_y):
         """Set the object's position."""
-        self.position.x, self.position.y = center_x, center_y
+        self.position.x = center_x
+        self.position.y = center_y
 
     def update_position(self):
         """Update the position of the object."""
@@ -145,7 +149,15 @@ class Movement:
 
     def update_speed(self):
         """Update the speed."""
-        self._speed = math.sqrt(self.velocity.x**2 + self.velocity.y**2)
+        def square():
+            try:
+                return self.velocity.x**2 + self.velocity.y**2
+            except OverflowError:
+                self.velocity.x = -1.1 if self.velocity.x < 0 else 1.1
+                self.velocity.y = -1.1 if self.velocity.y < 0 else 1.1
+                return square()
+
+        self._speed = math.sqrt(square())
 
     def update_move_angle(self):
         """Update the move angle."""

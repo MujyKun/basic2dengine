@@ -89,6 +89,31 @@ def test_cross_movement():
     Scene("Test", sprites=[sprite, sprite_2]).start()
 
 
+def test_brick_and_default():
+    scene_size = Size(1920, 1080)
+    movement = Movement(position=MovementManipulator(1150, 600), static=True)
+    default_sprite = Sprite(movement=movement, bounded_action=Action.stop(), collision_action=Action.bounce())
+
+    size = Size(384 // 3, 128 // 3)
+    img = Image(size=size, image_name=f"tile", file_location="assets/01-Breakout-Tiles.png")
+    position = MovementManipulator(60, 600)
+    movement = Movement(static=True, position=position)
+    brick_sprite = Sprite(image=img, movement=movement, collision_action=Action.die())
+
+    ball_sprite = Sprite(
+        image=Image(size=Size(24, 24),
+                    image_name=f"ball",
+                    file_location="assets/ball.png"),
+        movement=Movement(
+            static=False,
+            position=MovementManipulator(600, 600),
+            velocity=MovementManipulator(-5, -5)),
+        bounded_action=Action.bounce(), collision_action=Action.bounce(), scene_size=scene_size
+    )
+
+    Scene("Test", sprites=[default_sprite, brick_sprite, ball_sprite], size=scene_size).start()
+
+
 if __name__ == '__main__':
     test_horizontal_movement()
     test_vertical_movement()
@@ -100,4 +125,5 @@ if __name__ == '__main__':
     test_static_movement_diagonal_hit_top_left()
     test_static_movement_diagonal_hit_bottom_left()
     test_static_movement_diagonal_hit_bottom_right()
+    test_brick_and_default()
 

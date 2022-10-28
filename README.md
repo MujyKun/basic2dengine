@@ -11,7 +11,7 @@
 5) Start the program with `python run.py`  
 
 
-## Example Game
+## Example Game (Brick Breaker)
 The game can be found in [brickbreaker.py](brickbreaker.py). 
 Here are a few things to note:
 * The floor will kill the ball.

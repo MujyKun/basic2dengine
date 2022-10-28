@@ -1,4 +1,4 @@
-# Not So Basic 2D Game Engine
+# Not So Basic 2D Game Engine (For CSCI-437)
 
 ## Installation / Local Setup
 1) Clone the repository ``git clone https://github.com/MujyKun/basic2dengine.git``

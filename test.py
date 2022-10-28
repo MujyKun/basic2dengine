@@ -95,7 +95,7 @@ def test_brick_and_default():
     default_sprite = Sprite(movement=movement, bounded_action=Action.stop(), collision_action=Action.bounce())
 
     size = Size(384 // 3, 128 // 3)
-    img = Image(size=size, image_name=f"tile", file_location="assets/01-Breakout-Tiles.png")
+    img = Image(size=size, image_name=f"tile", file_location="assets/blue_tile.png")
     position = MovementManipulator(60, 600)
     movement = Movement(static=True, position=position)
     brick_sprite = Sprite(image=img, movement=movement, collision_action=Action.die())
@@ -108,7 +108,7 @@ def test_brick_and_default():
             static=False,
             position=MovementManipulator(600, 600),
             velocity=MovementManipulator(-5, -5)),
-        bounded_action=Action.bounce(), collision_action=Action.bounce(), scene_size=scene_size
+        bounded_action=Action.bounce(), collision_action=Action.bounce(), scene_size=scene_size, angle_collision=False
     )
 
     Scene("Test", sprites=[default_sprite, brick_sprite, ball_sprite], size=scene_size).start()

@@ -2,7 +2,7 @@ from typing import List
 
 import pygame
 
-from . import Size, MovementManipulator, Sprite, Visibility, Color
+from . import Size, MovementManipulator, Sprite, Visibility, Color, KeyboardTrigger
 
 
 class Scene(Visibility):
@@ -19,10 +19,13 @@ class Scene(Visibility):
          A list of sprites.
     :param visibility: bool
         Whether the sprite is visible.
+    :param keyboard_input: :ref:`KeyboardTrigger`
+        Object to control keyboard functionality.
+
 
     """
     def __init__(self, title: str, size: Size = None, frame_rate: int = 60,
-                 sprites: List[Sprite] = None, visibility: bool = True):
+                 sprites: List[Sprite] = None, visibility: bool = True, keyboard_input: KeyboardTrigger = None):
         super(Scene, self).__init__(visibility)
         self.title = title
         self.size: Size = size or Size(1280, 720)
@@ -36,6 +39,7 @@ class Scene(Visibility):
         self.clock = pygame.time.Clock()
         self.background = pygame.Surface(self.size.get_tuple())
         self.background.fill(Color.white())
+        self.keyboard = keyboard_input or KeyboardTrigger()
         self.active = False
 
     def start(self):
@@ -60,6 +64,8 @@ class Scene(Visibility):
         for event in pygame.event.get():
             if self.handle_event(event) is False:
                 return False
+
+        self.keyboard.run(pygame.key.get_pressed())
 
         for sprite_group in self.sprite_groups:
             sprite_group.clear(self.screen, self.background)

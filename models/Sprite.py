@@ -27,13 +27,15 @@ class Sprite(pygame.sprite.Sprite):
         The action instance for hitting the boundaries of a sprint.
     :param angle_collision: bool
         Bounce for collisions using angles.
+    :param player_controlled: bool
+        Whether the sprite is player controlled.
     """
 
     def __init__(self, size: Size = None,
                  image: Image = None,
                  movement: Movement = None,
                  visibility: bool = True, scene_size: Size = None, bounded_action: Action = None,
-                 collision_action: Action = None, angle_collision=True):
+                 collision_action: Action = None, angle_collision=True, player_controlled=False):
         super(Sprite, self).__init__()
         self.size: Size = size or Size(100, 100)
         self.image_obj: Image = image or Image(self.size)
@@ -52,6 +54,7 @@ class Sprite(pygame.sprite.Sprite):
         self._invert_v_y = False
         self._interacted_with_scene = False  # Know if our display is constantly updating.
         self.angle_collision = angle_collision
+        self.player_controlled = player_controlled
 
     @property
     def rect(self):
@@ -258,19 +261,45 @@ class Sprite(pygame.sprite.Sprite):
 
             self._handle_collision(sprite)
 
+    def _handle_collision_hide(self, sprite):
+        # Handle when to hide after a collision.
+        both_static = self.static and sprite.static
+        sprite_pass_through = Action.pass_through() != sprite.collision_action
+        self_pass_through = Action.pass_through() == self.collision_action
+        self_die = Action.die() == self.collision_action
+        sprite_die = Action.die() == sprite.collision_action
+        self_hide = Action.hide() == self.collision_action
+        sprite_hide = Action.hide() == sprite.collision_action
+
+        if self_die and sprite_pass_through and not both_static:
+            self.kill()
+        if sprite_die and self_pass_through and not both_static:
+            sprite.kill()
+
+        if self_hide and sprite_pass_through and not both_static:
+            self.hide()
+        if sprite_hide and self_pass_through and not both_static:
+            sprite.hide()
+
+        # Kill objects that are not player controlled.
+        if Action.kill_non_players() == self.collision_action and not sprite.player_controlled:
+            sprite.kill()
+
+        if Action.kill_non_players() == sprite.collision_action and not self.player_controlled:
+            self.kill()
+
+        if Action.kill() == self.collision_action:
+            sprite.kill()
+
+        if Action.kill() == sprite.collision_action:
+            self.kill()
+
     def _handle_collision(self, sprite):
         """Handle the collisions of a sprite."""
-        if sprite.image_obj.wallpaper:
+        if sprite.image_obj.wallpaper or self.player_controlled:
             return
 
-        # Check if the objects disappear.
-        both_static = self.static and sprite.static
-        if Action.die() == self.collision_action and \
-                Action.pass_through() != sprite.collision_action and not both_static:
-            self.hide()
-        if Action.die() == sprite.collision_action and \
-                Action.pass_through() != self.collision_action and not both_static:
-            sprite.hide()
+        self._handle_collision_hide(sprite)
 
         # confirm both objects are still visible unless we need to bounce.
         if not (sprite.visible and self.visible) and \
@@ -290,7 +319,6 @@ class Sprite(pygame.sprite.Sprite):
         other_sprite_bounce = Action.bounce() == sprite.collision_action
         other_sprite_dynamic = not sprite.static
         current_sprite_invisible = not self.visible
-        current_sprite_die = Action.die() == self.collision_action
 
         handle_other_sprite = other_sprite_bounce and \
                               ((other_sprite_dynamic) or
@@ -302,7 +330,7 @@ class Sprite(pygame.sprite.Sprite):
 
     @staticmethod
     def _handle_bounce(sprite, collided_sprite):
-        if sprite.static:
+        if sprite.static or sprite.player_controlled:
             return
 
         if not sprite.movement.is_moving:
@@ -324,6 +352,8 @@ class Sprite(pygame.sprite.Sprite):
                 else:
                     sprite.movement.velocity.y *= -1
                 sprite.stationary_collisions.remove(collided_sprite)  # we do not need this information anymore.
+            elif collided_sprite.player_controlled:
+                Sprite._handle_inversion_by_collision(sprite, collided_sprite)
             elif collided_sprite.movement.is_moving:
                 # Check if the current sprite needs to be inverted.
                 s_x_neg = sprite.movement.velocity.x < 0  # sprite velocity x negative
@@ -349,7 +379,7 @@ class Sprite(pygame.sprite.Sprite):
     def _handle_inversion_by_collision(sprite, collided_sprite):
         results = sprite.collides_with(collided_sprite, return_results=True) or []
 
-        if not sprite.angle_collision or any(results):
+        if (not sprite.angle_collision or any(results)) and not collided_sprite.player_controlled:
             if abs(sprite.movement.velocity.x) > abs(sprite.movement.velocity.y):
                 sprite.movement.velocity.x *= -1
             else:

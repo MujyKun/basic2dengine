@@ -1,6 +1,8 @@
 from random import randint
 
-from models import Sprite, Image, Scene, Movement, MovementManipulator, Angle, Action, Size
+import pygame
+
+from models import Sprite, Image, Scene, Movement, MovementManipulator, Angle, Action, Size, KeyboardTrigger, Trigger
 
 
 def create_brick_sprites():
@@ -40,7 +42,7 @@ def create_brick_sprites():
         for j in range(j_start_range, j_end_range):
             x = (i * size.width)
             y = (j * size.height)
-            img = Image(size=size, image_name=f"tile{i}-{j}", file_location="assets/01-Breakout-Tiles.png")
+            img = Image(size=size, image_name=f"tile{i}-{j}", file_location="assets/blue_tile.png")
             position = MovementManipulator(x, y)
             movement = Movement(static=True, position=position)
             sprite = Sprite(image=img, movement=movement, scene_size=scene_size, collision_action=Action.die())
@@ -59,12 +61,71 @@ def create_ball_sprite():
             position=MovementManipulator(600, 600),
             velocity=MovementManipulator(-5, -5)),
         bounded_action=Action.bounce(), collision_action=Action.bounce(), scene_size=scene_size,
-        angle_collision=False
+        angle_collision=True
     )
+
+
+def create_player_platform():
+    """Create player platform."""
+    return Sprite(
+        image=Image(size=Size(200, 40), image_name="player_platform", file_location="assets/platform.png"),
+        bounded_action=Action.wrap(),
+        scene_size=scene_size,
+        angle_collision=False,
+        movement=Movement(
+            position=MovementManipulator(scene_size.width // 2, 0.99 * scene_size.height)
+        ), player_controlled=True
+    )
+
+
+def create_platform_triggers(sprite):
+    """Create triggers for the platform."""
+    def move(key):
+        if key == pygame.K_LEFT:
+            sprite.movement.add_vector(Angle(degrees=180), thrust=1)
+        elif key == pygame.K_RIGHT:
+            sprite.movement.add_vector(Angle(degrees=0), thrust=1)
+
+    def spawn_ball(key):
+        if key == pygame.K_SPACE:
+            new_ball = create_ball_sprite()
+            new_ball.movement.set_position(sprite.rect.centerx, sprite.rect.centery - 20)
+            new_ball.movement.velocity.x = 0
+            new_ball.movement.velocity.y = -20
+            new_ball.add(sprite.groups())
+
+    return [Trigger(pygame.K_LEFT, move), Trigger(pygame.K_RIGHT, move), Trigger(pygame.K_SPACE, spawn_ball)]
+
+
+def create_ball_death_floor():
+    """Create a sprite for the ball's death."""
+    return Sprite(
+        image=Image(size=Size(scene_size.width, 2),
+                    image_name=f"death",
+                    file_location="assets/red_tile.png"),
+        movement=Movement(
+            static=True, position=MovementManipulator(scene_size.width / 2, scene_size.height),
+            velocity=MovementManipulator(-5, -5)),
+        collision_action=Action.kill_non_players(), scene_size=scene_size
+    )
+
+
+def create_wallpaper():
+    """Create a wallpaper."""
+    return Sprite(image=Image(scene_size, image_name="wallpaper", file_location="assets/sky2.jpg", wallpaper=True),
+                  movement=Movement(position=MovementManipulator(scene_size.width/2, scene_size.height/2), static=True),
+                  bounded_action=Action.pass_through(),
+                  collision_action=Action.pass_through())
 
 
 if __name__ == '__main__':
     scene_size = Size(1920, 1080)
-    sprites = create_brick_sprites() + [create_ball_sprite()]
-    brick_breaker = Scene("Brick Breaker", sprites=sprites, size=scene_size)
+    player_platform = create_player_platform()
+    ball = create_ball_sprite()
+    ball_death_floor = create_ball_death_floor()
+    wallpaper = create_wallpaper()
+    sprites = [wallpaper, ball_death_floor] + create_brick_sprites() + [ball, player_platform]
+    platform_triggers = create_platform_triggers(player_platform)
+    brick_breaker = Scene("Brick Breaker", sprites=sprites, size=scene_size,
+                          keyboard_input=KeyboardTrigger(platform_triggers))
     brick_breaker.start()

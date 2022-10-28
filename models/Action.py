@@ -20,6 +20,11 @@ class Action:
         return Action("die")
 
     @classmethod
+    def hide(cls):
+        """Hide on collision."""
+        return Action("hide")
+
+    @classmethod
     def wrap(cls):
         """Wrap around the scene."""
         return Action("wrap")
@@ -38,4 +43,14 @@ class Action:
     def pass_through(cls):
         """Pass through a sprite."""
         return Action("pass")
+
+    @classmethod
+    def kill(cls):
+        """Kill all objects."""
+        return Action("kill")
+
+    @classmethod
+    def kill_non_players(cls):
+        """Kill a non-player."""
+        return Action("kill_non_players")
 

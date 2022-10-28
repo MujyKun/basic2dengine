@@ -1,3 +1,4 @@
+from .Keyboard import Trigger, KeyboardTrigger
 from .Action import Action
 from .Color import Color
 from .Size import Size

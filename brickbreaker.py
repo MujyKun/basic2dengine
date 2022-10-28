@@ -7,8 +7,8 @@ from models import Sprite, Image, Scene, Movement, MovementManipulator, Angle, A
 SCENE_WIDTH = 1080
 SCENE_HEIGHT = 720
 
-SCENE_WIDTH = 1920
-SCENE_HEIGHT = 1080
+# SCENE_WIDTH = 1920
+# SCENE_HEIGHT = 1080
 
 
 def create_brick_sprites():

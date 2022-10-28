@@ -7,8 +7,8 @@ from models import Sprite, Image, Scene, Movement, MovementManipulator, Angle, A
 SCENE_WIDTH = 1080
 SCENE_HEIGHT = 720
 
-# SCENE_WIDTH = 1920
-# SCENE_HEIGHT = 1080
+SCENE_WIDTH = 1920
+SCENE_HEIGHT = 1080
 
 
 def create_brick_sprites():
@@ -51,7 +51,7 @@ def create_brick_sprites():
             img = Image(size=size, image_name=f"tile{i}-{j}", file_location="assets/blue_tile.png")
             position = MovementManipulator(x, y)
             movement = Movement(static=True, position=position)
-            sprite = Sprite(image=img, movement=movement, scene_size=scene_size, collision_action=Action.die())
+            sprite = Sprite(image=img, movement=movement, scene_size=scene_size, collision_action=Action.hide())
             brick_sprites.append(sprite)
     return brick_sprites
 

@@ -18,12 +18,15 @@ Here are a few things to note:
 * Use the spacebar key to spawn new balls.
 * The amount of bricks/tiles are decided based on the screen resolution.
 * You can use the Left or Right keyboard arrow key to move the platform respectively.
+* You can play background music by typing `m` on the keyboard.
+* You can pause/unpause the background music by typing `p` on the keyboard.
+* You can stop the background music by typing `s` on the keyboard.
 
 
 Here is a gif of an example run:
 ![Brick Breaker](example_gifs/brick_breaker.gif)
 This example run may appear a bit slow because of the recording software, but also the game was rendered at 1080p.
-It is a lot smoother at 720p which is now the default on run..
+It is a lot smoother at 720p which is now the default on run.
 
 ## Collision Tests
 There are tests for collisions in [test.py](test.py) that could be run. Canceling out of one screen will open another.  

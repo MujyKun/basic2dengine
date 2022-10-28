@@ -41,6 +41,7 @@ class Scene(Visibility):
         self.background.fill(Color.white())
         self.keyboard = keyboard_input or KeyboardTrigger()
         self.active = False
+        pygame.mixer.init()
 
     def start(self):
         """Start the scene."""

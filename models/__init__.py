@@ -1,3 +1,4 @@
+from .Audio import Audio
 from .Keyboard import Trigger, KeyboardTrigger
 from .Action import Action
 from .Color import Color

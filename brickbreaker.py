@@ -1,8 +1,8 @@
-from random import randint
 
 import pygame
 
-from models import Sprite, Image, Scene, Movement, MovementManipulator, Angle, Action, Size, KeyboardTrigger, Trigger
+from models import Sprite, Image, Scene, Movement, MovementManipulator, Angle, Action, Size, KeyboardTrigger, \
+    Trigger, Audio
 
 SCENE_WIDTH = 1080
 SCENE_HEIGHT = 720
@@ -124,6 +124,25 @@ def create_wallpaper():
                   collision_action=Action.pass_through())
 
 
+def create_audio_triggers():
+    audio = Audio("8bit", "assets/8bit.mp3")
+
+    def manage_audio(key):
+        if key == pygame.K_p:
+            if audio.paused:
+                audio.unpause()
+            else:
+                audio.pause()
+        elif key == pygame.K_m:
+            if not audio.playing:
+                audio.play()
+        elif key == pygame.K_s:
+            if audio.playing:
+                audio.stop()
+
+    return [Trigger(pygame.K_p, manage_audio), Trigger(pygame.K_m, manage_audio), Trigger(pygame.K_s, manage_audio)]
+
+
 if __name__ == '__main__':
     scene_size = Size(SCENE_WIDTH, SCENE_HEIGHT)
     player_platform = create_player_platform()
@@ -132,6 +151,7 @@ if __name__ == '__main__':
     wallpaper = create_wallpaper()
     sprites = [wallpaper, ball_death_floor] + create_brick_sprites() + [ball, player_platform]
     platform_triggers = create_platform_triggers(player_platform)
+    audio_triggers = create_audio_triggers()
     brick_breaker = Scene("Brick Breaker", sprites=sprites, size=scene_size,
-                          keyboard_input=KeyboardTrigger(platform_triggers))
+                          keyboard_input=KeyboardTrigger(platform_triggers + audio_triggers))
     brick_breaker.start()

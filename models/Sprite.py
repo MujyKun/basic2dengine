@@ -139,23 +139,28 @@ class Sprite(pygame.sprite.Sprite):
         """Get the bottom of the sprite."""
         return self.rect.bottom
 
-    def collides_with(self, sprite, visible=True):
+    def collides_with(self, sprite, visible=True, return_results=False):
         """Check if a sprite collides with another sprite.
 
         :param sprite: :ref:`Sprite`
             The sprite to check collisions with.
         :param visible: bool
             Whether the object needs to be visible or not.
+        :param return_results: bool
+            Return the results.
         """
         if (visible and not (self.visible and sprite.visible)) or self == sprite:
             return False
 
         # instead of checking to see if the sprites are inside each other (inherently more complex),
         # we check if they are outside.
-        if any([self.bottom < sprite.top,
-                self.top > sprite.bottom,
-                self.right < sprite.left,
-                self.left > sprite.right]):
+        results = [self.bottom < sprite.top, self.top > sprite.bottom, self.right < sprite.left,
+                   self.left > sprite.right]
+
+        if return_results:
+            return results
+
+        if any(results):
             return False
 
         return True
@@ -244,10 +249,16 @@ class Sprite(pygame.sprite.Sprite):
             return
 
         for sprite in colliding_sprites:
+            if self.image_obj.wallpaper:
+                continue
+
             self._handle_collision(sprite)
 
     def _handle_collision(self, sprite):
         """Handle the collisions of a sprite."""
+        if sprite.image_obj.wallpaper:
+            return
+
         # Check if the objects disappear.
         both_static = self.static and sprite.static
         if Action.die() == self.collision_action and \
@@ -270,16 +281,67 @@ class Sprite(pygame.sprite.Sprite):
             self._handle_bounce(self, sprite)
 
         # This is the only case where we handle the bounce of the other sprite because we do not want to
-        # bounce against this object in the future when it is not visible.
+        # bounce against this object in the future when it is not visible or it is static.
         # this sprite object will not have to handle the bounce again.
-        if Action.bounce() == sprite.collision_action and not self.visible:
+        other_sprite_bounce = Action.bounce() == sprite.collision_action
+        other_sprite_dynamic = not sprite.static
+        current_sprite_invisible = not self.visible
+        current_sprite_die = Action.die() == self.collision_action
+
+        handle_other_sprite = other_sprite_bounce and \
+                              ((other_sprite_dynamic) or
+                               current_sprite_invisible)
+        if handle_other_sprite:
             sprite.stationary_collisions.append(self)
-            self._handle_bounce(sprite, self)
+            if not self.visible:
+                self._handle_bounce(sprite, self)
 
     @staticmethod
     def _handle_bounce(sprite, collided_sprite):
         if sprite.static:
             return
+
+        def inverse_current_sprite_velocity():
+            results = sprite.collides_with(collided_sprite, return_results=True)
+            if any(results):
+                if abs(sprite.movement.velocity.x) > abs(sprite.movement.velocity.y):
+                    sprite.movement.velocity.x *= -1
+                else:
+                    sprite.movement.velocity.y *= -1
+            else:
+                sprite.movement.update_move_angle()
+                angle = Angle.normalize_degrees(sprite.movement.move_angle.angle_in_degrees)
+                # touching_left_side = collided_sprite.right > sprite.right > collided_sprite.left
+                # touching_bot_side = collided_sprite.top > sprite.top > collided_sprite.bottom
+                # touching_top_side = collided_sprite.bottom > sprite.bottom > collided_sprite.top
+                # touching_right_side = collided_sprite.left < sprite.left < collided_sprite.right
+
+                left_diff = abs(sprite.right - collided_sprite.left) or 0
+                bot_diff = abs(sprite.top - collided_sprite.bottom) or 0
+                top_diff = abs(sprite.bottom - collided_sprite.top) or 0
+                right_diff = abs(sprite.left - collided_sprite.right) or 0
+
+                if angle in range(0, 90):  # top left
+                    if max(top_diff, left_diff) == top_diff:
+                        sprite.movement.velocity.x *= -1
+                    else:
+                        sprite.movement.velocity.y *= -1
+                elif angle in range(90, 180):  # top right
+                    if max(top_diff, right_diff) == top_diff:
+                        sprite.movement.velocity.x *= -1
+                    else:
+                        sprite.movement.velocity.y *= -1
+
+                elif angle in range(180, 270):  # bottom right
+                    if max(bot_diff, right_diff) == bot_diff:
+                        sprite.movement.velocity.x *= -1
+                    else:
+                        sprite.movement.velocity.y *= -1
+                else:
+                    if max(bot_diff, left_diff) == bot_diff:  # bottom left
+                        sprite.movement.velocity.x *= -1
+                    else:
+                        sprite.movement.velocity.y *= -1
 
         if not sprite.movement.is_moving:
             # current object is stationary.
@@ -293,7 +355,9 @@ class Sprite(pygame.sprite.Sprite):
             # current object is moving, move the opposite direction of the collided object.
             if collided_sprite in sprite.stationary_collisions:  # our collided_sprite was once stationary.
                 # check how much we've moved in a direction to determine which direction to change.
-                if abs(collided_sprite.movement.velocity.x) > abs(collided_sprite.movement.velocity.y):
+                if collided_sprite.movement.velocity.get_tuple() == (0, 0):
+                    inverse_current_sprite_velocity()
+                elif abs(collided_sprite.movement.velocity.x) > abs(collided_sprite.movement.velocity.y):
                     sprite.movement.velocity.x *= -1
                 else:
                     sprite.movement.velocity.y *= -1
@@ -317,10 +381,7 @@ class Sprite(pygame.sprite.Sprite):
 
             else:
                 # Handle stationary objects against moving objects.
-                if abs(sprite.movement.velocity.x) > abs(sprite.movement.velocity.y // 2):
-                    sprite.movement.velocity.x *= -1
-                else:
-                    sprite.movement.velocity.y *= -1
+                inverse_current_sprite_velocity()
 
     def update(self):
         """Update the sprite."""

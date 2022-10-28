@@ -76,6 +76,10 @@ class Angle:
         return math.degrees(radians)
 
     @staticmethod
+    def normalize_degrees(degrees: float):
+        return degrees % 360
+
+    @staticmethod
     def degrees_to_radians(degrees: float):
         """Convert degrees to radians.
 

@@ -74,24 +74,18 @@ class Scene(Visibility):
 
         pygame.display.flip()
 
-    def clear(self):
-        """Clear the scene."""
+    # def clear(self):
+    #     """Clear the scene."""
 
     def stop(self):
         """Stop/End the scene."""
         self.active = False
-
-    def pause(self):
-        """Pause the scene."""
-
-    def save(self):
-        """Save the scene."""
-
-    def load(self):
-        """Load the scene."""
-
-    def hide_cursor(self):
-        """Hide the cursor."""
-
-    def show_cursor(self):
-        """Show the cursor."""
+    #
+    # def pause(self):
+    #     """Pause the scene."""
+    #
+    # def save(self):
+    #     """Save the scene."""
+    #
+    # def load(self):
+    #     """Load the scene."""

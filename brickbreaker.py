@@ -4,6 +4,12 @@ import pygame
 
 from models import Sprite, Image, Scene, Movement, MovementManipulator, Angle, Action, Size, KeyboardTrigger, Trigger
 
+SCENE_WIDTH = 1080
+SCENE_HEIGHT = 720
+
+# SCENE_WIDTH = 1920
+# SCENE_HEIGHT = 1080
+
 
 def create_brick_sprites():
     """Create the brick sprites."""
@@ -119,7 +125,7 @@ def create_wallpaper():
 
 
 if __name__ == '__main__':
-    scene_size = Size(1920, 1080)
+    scene_size = Size(SCENE_WIDTH, SCENE_HEIGHT)
     player_platform = create_player_platform()
     ball = create_ball_sprite()
     ball_death_floor = create_ball_death_floor()
